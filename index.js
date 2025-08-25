@@ -120,7 +120,7 @@ app.get("/", (req, res) => {
   res.send("✅ Gura-io bot is alive!");
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server (important: bind to 0.0.0.0 for Render)
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Keep-alive server running on port ${PORT}`);
 });
