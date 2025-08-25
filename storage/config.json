@@ -1,0 +1,37 @@
+{
+    "prefix": "!",
+    "phoneNumber": "2348153827918",
+    "ownerNumber": "2348153827918",
+    "admins": ["2348153827918@s.whatsapp.net"],
+    "allowedGroups": [],
+    "mediaDownloadLimit": 10485760,
+    "commandCooldown": 2000,
+    "settings": {
+        "autoWelcome": true,
+        "autoFarewell": true,
+        "deleteCommands": false,
+        "restrictToAdmins": false,
+        "mode": "public",
+        "antiDelete": false,
+        "antiLink": false
+    },
+    "reactions": {
+        "commands": {
+            "help": "❓",
+            "ping": "🏓",
+            "tts": "🔊",
+            "joke": "😂",
+            "fact": "🧠",
+            "quote": "💭",
+            "weather": "🌤️",
+            "define": "📖",
+            "lyrics": "🎵",
+            "movie": "🎬",
+            "anime": "🎌",
+            "sticker": "🎯",
+            "play": "▶️",
+            "download": "⬇️"
+        },
+        "phoneNumbers": {}
+    }
+}
