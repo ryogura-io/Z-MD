@@ -7,8 +7,7 @@ const CONFIG_FILE = path.join(__dirname, 'storage', 'config.json');
 const defaultConfig = {
     prefix: '!',
     phoneNumber: '2348153827918', // Bot's phone number for pairing
-    ownerNumber: '2348153827918', // Bot's phone number for pairing
-    // ownerNumber: '2348153827918@s.whatsapp.net', // Owner's WhatsApp number
+    ownerNumber: '2348153827918@s.whatsapp.net', // Owner's WhatsApp number
     admins: ['2348153827918@s.whatsapp.net'], // Will be populated with phone numbers
     allowedGroups: [], // If empty, bot works in all groups
     mediaDownloadLimit: 10 * 1024 * 1024, // 10MB limit
