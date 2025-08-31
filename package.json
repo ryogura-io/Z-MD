@@ -18,6 +18,8 @@
     "axios": "^1.11.0",
     "betabotz-tools": "^0.0.7",
     "express": "^4.21.1",
+    "ffmpeg": "^0.0.4",
+    "ffmpeg-static": "^5.2.0",
     "gtts": "^0.2.1",
     "he": "^1.2.0",
     "image2url": "^1.0.15",
