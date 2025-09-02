@@ -118,7 +118,7 @@ const downloaderCommands = {
                     const buffer = Buffer.from(await mediaRes.arrayBuffer());
 
                     if (/\.mp4($|\?)/.test(mediaUrl)) {
-                        await bot.sendVideo(chatId, buffer, caption);
+                        await bot.sendVideo(chatId, buffer, caption, {}); // empty object if no extra options
                     } else {
                         await bot.sendImage(chatId, buffer, caption);
                     }
@@ -205,7 +205,6 @@ const downloaderCommands = {
                         }
                     }
                 );
-
             } catch (err) {
                 console.error("TikTok command error:", err);
                 await bot.sendMessage(chatId, "❌ Error processing TikTok command.");
