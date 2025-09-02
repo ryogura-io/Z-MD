@@ -99,27 +99,30 @@ const helpCommand = {
         execute: async (context) => {
             const { chatId, bot } = context;
             const startTime = Date.now();
+
             const currentMode = config.get('settings').mode;
             const seconds = Math.floor(process.uptime());
-            const d = Math.floor(seconds / (3600*24));
-            const h = Math.floor((seconds % (3600*24)) / 3600);
+            const d = Math.floor(seconds / (3600 * 24));
+            const h = Math.floor((seconds % (3600 * 24)) / 3600);
             const m = Math.floor((seconds % 3600) / 60);
             const s = Math.floor(seconds % 60);
 
-            const uptimeStr = 
-                (d > 0 ? `${d}d ` : '') + 
-                (h > 0 ? `${h}h ` : '') + 
-                (m > 0 ? `${m}m ` : '') + 
+            const uptimeStr =
+                (d > 0 ? `${d}d ` : '') +
+                (h > 0 ? `${h}h ` : '') +
+                (m > 0 ? `${m}m ` : '') +
                 `${s}s`;
-            
+
+            // Send first, then measure response time
+            const message = await bot.sendMessage(chatId, "⏱️ Pinging...");
             const endTime = Date.now();
             const responseTime = endTime - startTime;
-            
-            await bot.sendMessage(chatId, `⏱️ Response time: ${responseTime}ms\n` +
-                                    `🔹 Mode: *${currentMode}*\n` +
-                                    `⌚ Uptime: *${uptimeStr}*`);
-        }
-    }
-};
 
+            await bot.sendMessage(chatId, `⏱️ Response time: ${responseTime}ms\n` +
+                `🔹 Mode: *${currentMode}*\n` +
+                `⌚ Uptime: *${uptimeStr}*`,
+                { quoted: message });
+        }
+    },
+}
 module.exports = helpCommand;
