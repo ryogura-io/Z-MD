@@ -59,7 +59,7 @@ const utilityCommands = {
             try {
                 const vcard = 'BEGIN:VCARD\n' +
                     'VERSION:3.0\n' +
-                    'FN:Bot Owner\n' +
+                    'FN:Ryou Gura\n' +
                     'ORG:WhatsApp Bot;\n' +
                     'TEL;type=CELL;type=VOICE;waid=2348153827918:+234 815 382 7918\n' +
                     'END:VCARD';
