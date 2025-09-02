@@ -119,19 +119,22 @@ class Bot {
         try {
             await this.msgQueue.sendMessage(chatId, {
                 image: buffer,
-                caption: caption
+                caption: caption,
+                mimetype: 'image/jpeg' // or 'image/png' depending on the buffer
             });
         } catch (error) {
             console.error('Error sending image:', error);
         }
     }
 
-    async sendVideo(chatId, buffer, caption = '', gif = false) {
+    async sendVideo(chatId, buffer, caption = '', options = {}) {
         try {
             await this.msgQueue.sendMessage(chatId, {
                 video: buffer,
                 caption: caption,
-                gifPlayback: gif
+                mimetype: 'video/mp4',
+                gifPlayback: options.gif || false,
+                ...options
             });
         } catch (error) {
             console.error('Error sending video:', error);
