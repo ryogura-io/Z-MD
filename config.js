@@ -9,7 +9,7 @@ const defaultConfig = {
     phoneNumber: '2348153827918@s.whatsapp.net', // Bot's phone number
     ownerNumber: [
         '2348153827918@s.whatsapp.net',
-        '33381123379402@s.whatsapp.net',
+        '33381123379402@lid',
         '270617702056168@lid',
     ], // Owner's WhatsApp number
     admins: [
@@ -39,6 +39,7 @@ const defaultConfig = {
             // 🛠️ Utility
             tts: '🔊',
             owner: '👑',
+            locked: '👑',
             joke: '😂',
             fact: '🧠',
             quote: '💭',
@@ -51,6 +52,9 @@ const defaultConfig = {
             sticker: '🎯',
             s: '🎯',
             toimg: '🖼️',
+            img: '🖼️',
+            image: '🖼️',
+            pic: '🖼️',
             tourl: '🔗',
             url: '🔗',
             tiny: '✂',
@@ -80,6 +84,7 @@ const defaultConfig = {
             tiktok: '🎵',
             tt: '🎵',
             spotify: '🎵',
+            spot: '🎵',
             youtube: '▶️',
             ytmp3: '🎧',
             waifu: '💮',
