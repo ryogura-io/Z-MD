@@ -94,18 +94,17 @@ async function startBot() {
                 output: process.stdout
             });
 
-            rl.question("📲 Enter your phone number with country code (e.g. 2348012345678): ", async (phoneNumber) => {
+            setTimeout(async () => {
                 try {
+                    const phoneNumber = config.get("pairingNumber");
                     console.log(`⏳ Generating pairing code for: ${phoneNumber} ...`);
                     const code = await sock.requestPairingCode(phoneNumber.trim());
                     console.log(`\n🔑 Your WhatsApp Pairing Code: ${code}`);
                     console.log("👉 Open WhatsApp > Linked Devices > Link with phone number and enter this code.\n");
                 } catch (err) {
                     console.error("❌ Failed to generate pairing code:", err);
-                } finally {
-                    rl.close();
                 }
-            });
+            }, 2000);
         }
 
         // --- Message Handling ---
