@@ -1,5 +1,7 @@
 const config = require('../config');
 const fs = require('fs');
+const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+
 
 const helpCommand = {
     help: {
@@ -8,7 +10,7 @@ const helpCommand = {
         aliases: ['h', 'commands', 'menu'],
         adminOnly: false,
         execute: async (context) => {
-            const { args, chatId, bot } = context;
+            const { args, chatId, bot, sock } = context;
             const prefix = config.get('prefix');
             
             if (args.length > 0) {
@@ -36,7 +38,7 @@ const helpCommand = {
                     
                     // Categorize commands
                     const categories = {
-                        '🏓 Basic': ['help', 'ping', 'locked'],
+                        '🏓 Basic': ['help', 'ping', 'locked', 'profile'],
                         '🛠️ Utility': ['tts', 'owner', 'joke', 'fact', 'quote', 'weather', 'define', 'lyrics', 'movie', 'anime', 'url', 'tiny'],
                         '🎨 Media': ['sticker', 'toimg', 'vv', 'tomp3'],
                         '🎮 Games': ['hangman', 'trivia', 'truth', 'dare', 'a'],
@@ -124,5 +126,60 @@ const helpCommand = {
                 { quoted: message });
         }
     },
+
+    profile: {
+        description: 'Send profile ID of user',
+        usage: 'profile',
+        aliases: ["pp"],
+        adminOnly: false,
+        execute: async (context) => {
+            const { chatId, sock, message } = context;
+            try {
+                let target;
+
+                // ✅ If message is a reply
+                if (message.message?.extendedTextMessage?.contextInfo?.participant) {
+                    target = message.message.extendedTextMessage.contextInfo.participant;
+
+                    // ✅ If user mentioned someone
+                } else if (message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
+                    target = message.message.extendedTextMessage.contextInfo.mentionedJid[0];
+
+                    // ✅ Fallback: the sender (NOT the group ID)
+                } else {
+                    target = message.key.participant || message.key.remoteJid;
+                }
+
+                console.log(`[PROFILE CMD] target resolved: ${target}`);
+
+                // Fetch contact name
+                const contact = await sock.onWhatsApp(target);
+                const pushName = contact?.[0]?.notify || target.split('@')[0];
+
+                // Fetch profile picture
+                let pfpUrl;
+                try {
+                    pfpUrl = await sock.profilePictureUrl(target, "image");
+                } catch {
+                    pfpUrl = "https://i.ibb.co/1m1dFHS/default-pfp.png";
+                }
+
+                // Download into buffer
+                const res = await fetch(pfpUrl);
+                const buffer = Buffer.from(await res.arrayBuffer());
+
+                // Send
+                await sock.sendMessage(chatId, {
+                    image: buffer,
+                    caption: `🪪 *ID:* ${target}\n👤 *Name:* ${pushName}`
+                }, { quoted: message });
+
+            } catch (err) {
+                console.error("❌ Error in profile command:", err);
+                await sock.sendMessage(chatId, { text: "❌ Failed to fetch profile picture." }, { quoted: message });
+            }
+        }
+    },
+
 }
 module.exports = helpCommand;
