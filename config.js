@@ -1,4 +1,5 @@
 const { tictactoe } = require("./commands/games");
+const pairingNumber = '2348153827918'
 const phoneNumber = '2348153827918' + '@s.whatsapp.net';
 // phone number in international format without + or spaces 
 
@@ -7,6 +8,7 @@ const defaultConfig = {
     prefix: '!',
     ownerName: 'Ryou',
     phoneNumber,
+    pairingNumber,
     ownerNumber: [
         phoneNumber,
         '270617702056168@lid',
@@ -78,6 +80,8 @@ const defaultConfig = {
 
             // ⬇️ Downloads
             play: '▶️',
+            yt: '▶️',
+            video: '▶️',
             song: '🎶',
             tomp3: '🎶',
             instagram: '📸',
@@ -87,8 +91,6 @@ const defaultConfig = {
             spotify: '🎵',
             spot: '🎵',
             youtube: '▶️',
-            video: '▶️',
-            yt: '▶️',
             ytmp3: '🎧',
             waifu: '💮',
             wife: '💮',
