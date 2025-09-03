@@ -1,12 +1,18 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, makeCacheableSignalKeyStore } = require('@whiskeysockets/baileys'); 
+const { 
+    default: makeWASocket, 
+    DisconnectReason, 
+    useMultiFileAuthState, 
+    makeCacheableSignalKeyStore 
+} = require('@whiskeysockets/baileys');
+
 const pino = require('pino');
-const qrcode = require('qrcode-terminal'); 
 const Bot = require('./bot');
 const config = require('./config');
 const express = require("express");
 const fs = require("fs");
 const { Boom } = require('@hapi/boom');
 const MessageQueue = require("./utils/queue"); // ✅ import queue
+const readline = require("readline");
 
 async function startBot() {
     try {
@@ -34,11 +40,7 @@ async function startBot() {
         sock.ev.on('creds.update', saveCreds);
 
         // --- Connection Handling ---
-        sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
-            if (qr) {
-                console.log('\n📱 Scan this QR code with WhatsApp:');
-                qrcode.generate(qr, { small: true });
-            }
+        sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
 
             if (connection === 'close') {
                 const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
@@ -65,20 +67,18 @@ async function startBot() {
 
             } else if (connection === 'open') {
                 console.info('✅ WhatsApp bot connected successfully!');
-
-                const owners = config.ownerNumber || [];
-                if (owners.length > 0 && !sock.__welcomeSent) {
-                    const firstOwner = owners[0];
-                    const msg = `✅ *Bot Connected!*\n\n` +
+                
+                if (!sock.__welcomeSent) {
+                    const firstOwner = config.get("phoneNumber");
+                    const msg = `✅ *Gura-MD Bot Connected!*\n\n` +
                         `🤖 WhatsApp Bot is online\n` +
                         `⏰ Connected at: ${new Date().toLocaleString()}\n` +
                         `📱 Status: Ready\n\n` +
-                        `Type ${config.prefix}help for commands.`;
+                        `Type ${config.get('prefix')}help for commands.`;
 
                     try {
-                        // ✅ use queue instead of direct send
                         await msgQueue.sendMessage(firstOwner, { text: msg });
-                        console.info(`✅ Success message sent to first owner: ${firstOwner}`);
+                        console.info(`✅ Success message sent to owner: ${firstOwner}`);
                         sock.__welcomeSent = true; // prevent spamming
                     } catch (err) {
                         console.error(`❌ Failed to send message to ${firstOwner}:`, err);
@@ -87,15 +87,35 @@ async function startBot() {
             }
         });
 
+        // --- Pairing Code (only when no saved session) ---
+        if (!state.creds.registered) {
+            const rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout
+            });
+
+            rl.question("📲 Enter your phone number with country code (e.g. 2348012345678): ", async (phoneNumber) => {
+                try {
+                    console.log(`⏳ Generating pairing code for: ${phoneNumber} ...`);
+                    const code = await sock.requestPairingCode(phoneNumber.trim());
+                    console.log(`\n🔑 Your WhatsApp Pairing Code: ${code}`);
+                    console.log("👉 Open WhatsApp > Linked Devices > Link with phone number and enter this code.\n");
+                } catch (err) {
+                    console.error("❌ Failed to generate pairing code:", err);
+                } finally {
+                    rl.close();
+                }
+            });
+        }
+
         // --- Message Handling ---
         sock.ev.on('messages.upsert', async (m) => {
             try {
                 const msg = m.messages[0];
                 if (!msg.message) return;
-                if (msg.key.fromMe) return;
                 if (msg.message.protocolMessage) return;
 
-                await bot.handleMessage(m); // bot internally should use queue
+                await bot.handleMessage(m);
 
             } catch (err) {
                 if (String(err).includes("Bad MAC")) {
@@ -106,10 +126,6 @@ async function startBot() {
                 console.error("❌ Error handling message:", err.message || err);
             }
         });
-
-        // 🚫 Removed auto group event listeners
-        // sock.ev.on('groups.update', ...) 
-        // sock.ev.on('group-participants.update', ...)
 
     } catch (error) {
         console.error('❌ Error starting bot:', error);
