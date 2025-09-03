@@ -3,8 +3,20 @@ const ytSearch = require('yt-search');
 const axios = require("axios");
 const { igdl } = require('ruhend-scraper');
 const yts = require('yt-search');
+const fs = require('fs');
+const path = require('path');
 
 
+const princeVideoApi = {
+    base: 'https://api.princetechn.com/api/download/ytmp4',
+    apikey: process.env.PRINCE_API_KEY || 'prince',
+    async fetchMeta(videoUrl) {
+        const params = new URLSearchParams({ apikey: this.apikey, url: videoUrl });
+        const url = `${this.base}?${params.toString()}`;
+        const { data } = await axios.get(url, { timeout: 20000, headers: { 'user-agent': 'Mozilla/5.0', accept: 'application/json' } });
+        return data;
+    }
+};
 
 const streamToBuffer = (stream) => new Promise((resolve, reject) => {
     const chunks = [];
@@ -20,63 +32,188 @@ const downloaderCommands = {
         aliases: ["song", "music", "ytmp3"],
         adminOnly: false,
         execute: async (context) => {
-            const { args, chatId, bot } = context;
+            const { args, chatId, sock, message } = context;
 
             const searchQuery = args.join(" ").trim();
             if (!searchQuery) {
-                return await bot.sendMessage(chatId, "🎶 What song do you want to download?");
+                return await sock.sendMessage(
+                    chatId,
+                    { text: "🎶 What song do you want to download?" },
+                    { quoted: message }
+                );
             }
 
             try {
                 // 🔎 Search on YouTube
                 const { videos } = await yts(searchQuery);
                 if (!videos || videos.length === 0) {
-                    return await bot.sendMessage(chatId, "❌ No songs found!");
+                    return await sock.sendMessage(
+                        chatId,
+                        { text: "❌ No songs found!" },
+                        { quoted: message }
+                    );
                 }
 
                 // ⏳ Notify user
-                await bot.sendMessage(chatId, "_Please wait, your download is in progress..._");
+                await sock.sendMessage(
+                    chatId,
+                    { text: "_Please wait, your download is in progress..._" },
+                    { quoted: message }
+                );
 
                 // 🎥 First video result
                 const video = videos[0];
                 const urlYt = video.url;
 
                 // 🎧 Fetch MP3 download link
-                const response = await axios.get(`https://apis-keith.vercel.app/download/dlmp3?url=${urlYt}`);
+                const response = await axios.get(
+                    `https://apis-keith.vercel.app/download/dlmp3?url=${urlYt}`
+                );
                 const data = response.data;
 
                 if (!data || !data.status || !data.result || !data.result.downloadUrl) {
-                    return await bot.sendMessage(chatId, "⚠️ Failed to fetch audio. Please try again later.");
+                    return await sock.sendMessage(
+                        chatId,
+                        { text: "⚠️ Failed to fetch audio. Please try again later." },
+                        { quoted: message }
+                    );
                 }
 
                 const audioUrl = data.result.downloadUrl;
                 const title = data.result.title;
 
                 // 🎵 Send MP3 audio
-                await bot.sendAudio(
+                await sock.sendMessage(
                     chatId,
-                    { url: audioUrl },
                     {
+                        audio: { url: audioUrl },
                         mimetype: "audio/mpeg",
-                        fileName: `${title}.mp3`
-                    }
+                        fileName: `${title}.mp3`,
+                        ptt: false // set true if you want it as voice note
+                    },
+                    { quoted: message }
                 );
 
             } catch (error) {
                 console.error("❌ Error in play command:", error);
-                await bot.sendMessage(chatId, "⚠️ Download failed. Please try again later.");
+                await sock.sendMessage(
+                    chatId,
+                    { text: "⚠️ Download failed. Please try again later." },
+                    { quoted: message }
+                );
             }
         }
     },
 
+    facebook: {
+        description: 'Download Facebook videos',
+        usage: 'fb <url>',
+        aliases: ['fb', 'facebookdl'],
+        adminOnly: false,
+        execute: async (context) => {
+            const { sock, chatId, message, args } = context;
+
+            try {
+                const url = args[0];
+
+                if (!url) {
+                    return await sock.sendMessage(chatId, {
+                        text: "❌ Please provide a Facebook video URL.\nExample: !fb https://www.facebook.com/..."
+                    }, { quoted: message });
+                }
+
+                if (!url.includes('facebook.com')) {
+                    return await sock.sendMessage(chatId, {
+                        text: "❌ That is not a valid Facebook link."
+                    }, { quoted: message });
+                }
+
+                // React while loading
+                await sock.sendMessage(chatId, {
+                    react: { text: '🔄', key: message.key }
+                });
+
+                // Fetch video data from API
+                const response = await axios.get(`https://api.dreaded.site/api/facebook?url=${url}`);
+                const data = response.data;
+
+                if (!data || data.status !== 200 || !data.facebook || !data.facebook.sdVideo) {
+                    return await sock.sendMessage(chatId, {
+                        text: "⚠️ API didn’t respond correctly. Try again later!"
+                    }, { quoted: message });
+                }
+
+                const fbvid = data.facebook.sdVideo;
+
+                if (!fbvid) {
+                    return await sock.sendMessage(chatId, {
+                        text: "❌ Wrong Facebook data. Ensure the video exists."
+                    }, { quoted: message });
+                }
+
+                // Temp directory
+                const tmpDir = path.join(process.cwd(), 'tmp');
+                if (!fs.existsSync(tmpDir)) {
+                    fs.mkdirSync(tmpDir, { recursive: true });
+                }
+
+                const tempFile = path.join(tmpDir, `fb_${Date.now()}.mp4`);
+
+                // Download video
+                const videoResponse = await axios({
+                    method: 'GET',
+                    url: fbvid,
+                    responseType: 'stream',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0',
+                        'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+                        'Range': 'bytes=0-',
+                        'Referer': 'https://www.facebook.com/'
+                    }
+                });
+
+                const writer = fs.createWriteStream(tempFile);
+                videoResponse.data.pipe(writer);
+
+                await new Promise((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                });
+
+                if (!fs.existsSync(tempFile) || fs.statSync(tempFile).size === 0) {
+                    throw new Error('Failed to download video');
+                }
+
+                // Send video
+                await sock.sendMessage(chatId, {
+                    video: { url: tempFile },
+                    mimetype: "video/mp4",
+                    caption: "> *𝙶𝚄𝚁𝙰-𝙼𝙳*"
+                }, { quoted: message });
+
+                // Clean up
+                try {
+                    fs.unlinkSync(tempFile);
+                } catch (err) {
+                    console.error('Error cleaning temp file:', err);
+                }
+
+            } catch (err) {
+                console.error("❌ Error in Facebook command:", err);
+                await sock.sendMessage(chatId, {
+                    text: "⚠️ Error occurred. API might be down.\nError: " + err.message
+                }, { quoted: message });
+            }
+        }
+    },
 
     instagram: {
-        description: 'Download Instagram media from a link',
+        description: 'Download Instagram videos from a link',
         usage: 'ig <url>',
         aliases: ["ig"],
         adminOnly: false,
         execute: async (context) => {
-            const { args, chatId, bot } = context;
+            const { args, chatId, bot, sock, message } = context;
             const url = args[0];
 
             if (!url) {
@@ -111,16 +248,19 @@ const downloaderCommands = {
                         throw new Error('Fallback API did not return media');
                     }
                 }
-
                 // --- Send each media item ---
                 for (const mediaUrl of mediaUrls) {
-                    const mediaRes = await fetch(mediaUrl);
-                    const buffer = Buffer.from(await mediaRes.arrayBuffer());
+                    try {
+                        const mediaRes = await fetch(mediaUrl);
+                        const buffer = Buffer.from(await mediaRes.arrayBuffer());
 
-                    if (/\.mp4($|\?)/.test(mediaUrl)) {
-                        await bot.sendVideo(chatId, buffer, caption, {}); // empty object if no extra options
-                    } else {
-                        await bot.sendImage(chatId, buffer, caption);
+                        await sock.sendMessage(chatId, {
+                            video: buffer,
+                            mimetype: "video/mp4",
+                            caption: caption || "🎥 Instagram Video \n> *𝙶𝚄𝚁𝙰-𝙼𝙳*"
+                        }, { quoted: message });
+                    } catch (err) {
+                        console.error("❌ Failed to send IG video:", err.message);
                     }
                 }
             } catch (error) {
@@ -136,7 +276,7 @@ const downloaderCommands = {
         aliases: ["tt"],
         adminOnly: false,
         execute: async (context) => {
-            const { args, chatId, bot } = context;
+            const { args, chatId, bot, sock} = context;
             const url = args[0];
 
             if (!url) {
@@ -190,11 +330,11 @@ const downloaderCommands = {
                 }
 
                 // --- Send the video ---
-                await bot.sendVideo(
-                    chatId,
-                    videoBuffer,
-                    captionText || "🎶 TikTok Video \n> 𝙶𝚄𝚁𝙰-𝙼𝙳",
-                    {
+                await sock.sendMessage(chatId, {
+                    video: videoBuffer,
+                    mimetype: "video/mp4",
+                    caption: captionText || "🎶 TikTok Video \n> 𝙶𝚄𝚁𝙰-𝙼𝙳",
+                    contextInfo: {
                         externalAdReply: {
                             title: "TikTok Downloader",
                             body: "Powered by 𝙶𝚄𝚁𝙰-𝙼𝙳",
@@ -204,7 +344,7 @@ const downloaderCommands = {
                             renderLargerThumbnail: true
                         }
                     }
-                );
+                });
             } catch (err) {
                 console.error("TikTok command error:", err);
                 await bot.sendMessage(chatId, "❌ Error processing TikTok command.");
@@ -218,11 +358,11 @@ const downloaderCommands = {
         aliases: ["video", "yt"],
         adminOnly: false,
         execute: async (context) => {
-            const { args, chatId, bot } = context;
+            const { args, chatId, sock, message } = context;
             const searchQuery = args.join(" ").trim();
 
             if (!searchQuery) {
-                return await bot.sendMessage(chatId, "🎥 What video do you want to download?");
+                return await sock.sendMessage(chatId, { text: "🎥 What video do you want to download?" }, { quoted: message });
             }
 
             try {
@@ -230,37 +370,40 @@ const downloaderCommands = {
                 let videoTitle = "";
                 let videoThumbnail = "";
 
-                // Determine if input is a YouTube link
+                // 🔎 Check if it's a URL or search term
                 if (/^(https?:\/\/)/.test(searchQuery)) {
                     videoUrl = searchQuery;
                 } else {
-                    // Search YouTube for the video
                     const { videos } = await yts(searchQuery);
                     if (!videos || videos.length === 0) {
-                        return await bot.sendMessage(chatId, "❌ No videos found!");
+                        return await sock.sendMessage(chatId, { text: "❌ No videos found!" }, { quoted: message });
                     }
                     videoUrl = videos[0].url;
                     videoTitle = videos[0].title;
                     videoThumbnail = videos[0].thumbnail;
                 }
 
-                // Send thumbnail immediately
+                // 📸 Send thumbnail preview
                 try {
                     const ytId = (videoUrl.match(/(?:youtu\.be\/|v=)([a-zA-Z0-9_-]{11})/) || [])[1];
-                    const thumb = videoThumbnail || (ytId ? `https://i.ytimg.com/vi/${ytId}/sddefault.jpg` : undefined);
+                    const thumb = videoThumbnail || (ytId ? `https://i.ytimg.com/vi/${ytId}/sddefault.jpg` : null);
                     if (thumb) {
-                        await bot.sendImage(chatId, await (await axios.get(thumb, { responseType: "arraybuffer" })).data, `*${videoTitle || searchQuery}*\nDownloading...`);
+                        const imgRes = await axios.get(thumb, { responseType: "arraybuffer" });
+                        await sock.sendMessage(chatId, {
+                            image: Buffer.from(imgRes.data),
+                            caption: `*${videoTitle || searchQuery}*\n⏳ Downloading...`
+                        }, { quoted: message });
                     }
                 } catch (e) {
                     console.error("[YOUTUBE] thumb error:", e?.message || e);
                 }
 
-                // Validate YouTube URL
+                // ✅ Validate URL
                 if (!videoUrl.match(/(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch\?v=|v\/|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/)) {
-                    return await bot.sendMessage(chatId, "❌ This is not a valid YouTube link!");
+                    return await sock.sendMessage(chatId, { text: "❌ This is not a valid YouTube link!" }, { quoted: message });
                 }
 
-                // Fetch video metadata from PrinceTech API
+                // 🌐 Fetch metadata + download link
                 let videoDownloadUrl = "";
                 let title = "";
                 try {
@@ -269,24 +412,29 @@ const downloaderCommands = {
                         videoDownloadUrl = meta.result.download_url;
                         title = meta.result.title || "video";
                     } else {
-                        return await bot.sendMessage(chatId, "⚠️ Failed to fetch video from the API.");
+                        return await sock.sendMessage(chatId, { text: "⚠️ Failed to fetch video from the API." }, { quoted: message });
                     }
                 } catch (e) {
                     console.error("[YOUTUBE] prince API error:", e?.message || e);
-                    return await bot.sendMessage(chatId, "⚠️ Failed to fetch video from the API.");
+                    return await sock.sendMessage(chatId, { text: "⚠️ Failed to fetch video from the API." }, { quoted: message });
                 }
 
                 const filename = `${title}.mp4`;
 
-                // Try sending the video directly from the remote URL
+                // 🎥 Try sending directly via URL
                 try {
-                    await bot.sendVideo(chatId, { url: videoDownloadUrl, fileName: filename, mimetype: "video/mp4", caption: `*${title}*\n> *𝙶𝚄𝚁𝙰-𝙼𝙳 ✨*` });
+                    await sock.sendMessage(chatId, {
+                        video: { url: videoDownloadUrl },
+                        mimetype: "video/mp4",
+                        fileName: filename,
+                        caption: `*${title}*\n> *𝙶𝚄𝚁𝙰-𝙼𝙳 ✨*`
+                    }, { quoted: message });
                     return;
                 } catch (err) {
-                    console.warn("[YOUTUBE] Direct send failed, attempting buffer...", err?.message || err);
+                    console.warn("[YOUTUBE] Direct send failed, falling back to buffer...", err?.message || err);
                 }
 
-                // Fallback: download video into buffer
+                // 📥 Fallback: download as buffer
                 let buffer;
                 try {
                     const videoRes = await axios.get(videoDownloadUrl, {
@@ -295,19 +443,24 @@ const downloaderCommands = {
                     });
                     buffer = Buffer.from(videoRes.data);
                 } catch (err) {
-                    return await bot.sendMessage(chatId, "⚠️ Failed to download the video file.");
+                    return await sock.sendMessage(chatId, { text: "⚠️ Failed to download the video file." }, { quoted: message });
                 }
 
                 if (!buffer || buffer.length < 1024) {
-                    return await bot.sendMessage(chatId, "⚠️ Downloaded file is empty or too small.");
+                    return await sock.sendMessage(chatId, { text: "⚠️ Downloaded file is empty or too small." }, { quoted: message });
                 }
 
-                // Send the video buffer
-                await bot.sendVideo(chatId, { buffer, fileName: filename, mimetype: "video/mp4", caption: `*${title}*` });
+                // 📤 Send buffer
+                await sock.sendMessage(chatId, {
+                    video: buffer,
+                    mimetype: "video/mp4",
+                    fileName: filename,
+                    caption: `*${title}*`
+                }, { quoted: message });
 
             } catch (error) {
                 console.error("[YOUTUBE] Command error:", error?.message || error);
-                await bot.sendMessage(chatId, "❌ Download failed: " + (error?.message || "Unknown error"));
+                await sock.sendMessage(chatId, { text: "❌ Download failed: " + (error?.message || "Unknown error") }, { quoted: message });
             }
         }
     },
@@ -391,7 +544,7 @@ const downloaderCommands = {
                 await bot.sendImage(
                     chatId,
                     await (await axios.get(randomImage, { responseType: "arraybuffer" })).data,
-                    `🔍 Google Image Result for: *${query}*`
+                    `🔍 Google Image Result for: *${query}*\n> *𝙶𝚄𝚁𝙰-𝙼𝙳*`
                 );
 
             } catch (err) {
@@ -400,7 +553,6 @@ const downloaderCommands = {
             }
         }
     },
-
 
     waifu: {
         description: 'Get a random waifu picture',
