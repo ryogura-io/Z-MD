@@ -1,19 +1,18 @@
-// const { settings } = require("./commands/admin");
-
 const { tictactoe } = require("./commands/games");
+const phoneNumber = '2348153827918' + '@s.whatsapp.net';
+// phone number in international format without + or spaces 
 
 // Default configuration
 const defaultConfig = {
     prefix: '!',
     ownerName: 'Ryou',
-    phoneNumber: '2348153827918@s.whatsapp.net', // Bot's phone number
+    phoneNumber,
     ownerNumber: [
-        '2348153827918@s.whatsapp.net',
-        '33381123379402@lid',
+        phoneNumber,
         '270617702056168@lid',
     ], // Owner's WhatsApp number
     admins: [
-        '2348153827918@s.whatsapp.net',
+        phoneNumber,
         '33381123379402@lid',
         '270617702056168@lid',
     ], // Admin numbers
@@ -35,6 +34,8 @@ const defaultConfig = {
             h: '❓',
             menu: '❓',
             ping: '🏓',
+            profile: '👤',
+            pp: '👤',
 
             // 🛠️ Utility
             tts: '🔊',
@@ -129,6 +130,8 @@ const defaultConfig = {
         }
     }
 };
+
+module.exports = defaultConfig
 
 class Config {
     constructor() {
