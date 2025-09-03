@@ -54,27 +54,41 @@ const gameCommands = {
         adminOnly: false,
         execute: async (context) => {
             const { chatId, bot } = context;
-            
-            const questions = [
-                { q: "What is the capital of France?", a: "paris" },
-                { q: "What year was JavaScript created?", a: "1995" },
-                { q: "What does HTML stand for?", a: "hypertext markup language" },
-                { q: "What is the largest planet in our solar system?", a: "jupiter" },
-                { q: "Who painted the Mona Lisa?", a: "leonardo da vinci" }
-            ];
-            
-            const question = questions[Math.floor(Math.random() * questions.length)];
-            
-            const gameState = {
-                question: question.q,
-                answer: question.a.toLowerCase(),
-                gameType: 'trivia'
-            };
-            
-            gameStates.set(chatId, gameState);
-            
-            const gameText = `🧠 *Trivia Question*\n\n${question.q}\n\nUse !a <answer> to answer!`;
-            await bot.sendMessage(chatId, gameText);
+
+            try {
+                // ✅ Fetch 1 trivia question
+                const res = await axios.get("https://opentdb.com/api.php?amount=1&type=multiple");
+                const data = res.data.results[0];
+
+                // Decode HTML entities (sometimes OpenTDB returns `&quot;`)
+                const he = require("he");
+                const question = he.decode(data.question);
+                const correct = he.decode(data.correct_answer);
+                const options = [...data.incorrect_answers.map(o => he.decode(o)), correct];
+
+                // Shuffle options
+                options.sort(() => Math.random() - 0.5);
+
+                // ✅ Store game state
+                const gameState = {
+                    question,
+                    answer: correct.toLowerCase(),
+                    options,
+                    gameType: 'trivia'
+                };
+                gameStates.set(chatId, gameState);
+
+                // ✅ Send question
+                const gameText = `🧠 *Trivia Question*\n\n${question}\n\n` +
+                    options.map((o, i) => `${i + 1}. ${o}`).join("\n") +
+                    `\n\nUse !a <answer> to reply! (you can type the full answer or the number)`;
+
+                await bot.sendMessage(chatId, gameText);
+
+            } catch (err) {
+                console.error("Trivia error:", err.message);
+                await bot.sendMessage(chatId, "⚠️ Couldn't fetch a trivia question, try again later.");
+            }
         }
     },
 
@@ -260,14 +274,25 @@ async function handleHangmanGuess(gameState, guess, chatId, bot) {
 }
 
 async function handleTriviaAnswer(gameState, answer, chatId, bot) {
-    if (answer === gameState.answer) {
+    let userAnswer = answer;
+
+    // If user typed a number (e.g. "2"), map it to option
+    if (!isNaN(userAnswer)) {
+        const index = parseInt(userAnswer, 10) - 1;
+        if (gameState.options[index]) {
+            userAnswer = gameState.options[index].toLowerCase();
+        }
+    }
+
+    if (userAnswer === gameState.answer.toLowerCase()) {
         gameStates.delete(chatId);
         await bot.sendMessage(chatId, `🎉 *Correct!*\n\nThe answer was: *${gameState.answer}*`);
     } else {
-        await bot.sendMessage(chatId, `❌ *Wrong!*\n\nThe correct answer was: *${gameState.answer}*`);
         gameStates.delete(chatId);
+        await bot.sendMessage(chatId, `❌ *Wrong!*\n\nThe correct answer was: *${gameState.answer}*`);
     }
 }
+
 
 async function handleWordAssociation(gameState, newWord, chatId, bot) {
     gameState.currentWord = newWord;
