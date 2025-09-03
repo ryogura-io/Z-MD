@@ -87,6 +87,7 @@ const defaultConfig = {
             spotify: '🎵',
             spot: '🎵',
             youtube: '▶️',
+            yt: '▶️',
             ytmp3: '🎧',
             waifu: '💮',
             wife: '💮',
