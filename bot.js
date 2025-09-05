@@ -201,52 +201,6 @@ class Bot {
         }
     }
 
-    async tictactoeCommand(sock, chatId, senderId, text) {
-        if (!text) {
-            await this.sendMessage(chatId, "❌ Usage: .ttt <room_name>");
-            return;
-        }
-
-        if (!games[text]) {
-            games[text] = new TicTacToe(senderId, 'o');
-            games[text].playerO = null;
-            await this.sendMessage(chatId, `✅ Room *${text}* created. Waiting for opponent...`);
-        } else if (games[text].playerO === null) {
-            games[text].playerO = senderId;
-            await this.sendMessage(chatId, `✅ Game started in *${text}*!\n\n${games[text].render().join(" | ")}`);
-        } else {
-            await this.sendMessage(chatId, `❌ Room *${text}* is full.`);
-        }
-    }
-
-    async handleTicTacToeMove(sock, chatId, senderId, body) {
-        const game = Object.values(games).find(
-            g => g.playerX === senderId || g.playerO === senderId
-        );
-        if (!game) return;
-
-        if (/^[1-9]$/.test(body)) {
-            const pos = parseInt(body) - 1;
-            const isO = game.playerO === senderId;
-            if (!game.turn(isO, pos)) {
-                await this.sendMessage(chatId, "❌ Invalid move!");
-                return;
-            }
-
-            let boardText = game.render().map((v, i) => (i % 3 === 2 ? v + "\n" : v + " ")).join("");
-            await this.sendMessage(chatId, `\n${boardText}`);
-
-            if (game.winner) {
-                await this.sendMessage(chatId, `🎉 <@${game.winner.split('@')[0]}> wins!`);
-                delete games[chatId];
-            }
-        } else if (/^(surrender|give up)$/i.test(body)) {
-            const opponent = game.playerX === senderId ? game.playerO : game.playerX;
-            await this.sendMessage(chatId, `🏳️ <@${senderId.split('@')[0]}> surrendered! Winner: <@${opponent.split('@')[0]}>`);
-            delete games[chatId];
-        }
-    }
-
 }
 
 module.exports = Bot;
