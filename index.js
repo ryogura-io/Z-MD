@@ -33,6 +33,9 @@ async function startBot() {
             syncFullHistory: false,
             getMessage: async () => undefined, 
         });
+        
+        //remove always online
+        sock.sendPresenceUpdate = async () => { };
 
         // ✅ init queue
         const msgQueue = new MessageQueue(sock, 1000);
@@ -40,8 +43,6 @@ async function startBot() {
         // Pass both sock + queue into bot
         const bot = new Bot(sock, msgQueue);
 
-        //always online
-        sock.sendPresenceUpdate = async () => { };
 
         sock.ev.on('creds.update', saveCreds);
 
