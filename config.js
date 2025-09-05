@@ -1,4 +1,3 @@
-const { tictactoe } = require("./commands/games");
 const pairingNumber = '2348153827918'
 const phoneNumber = '2348153827918' + '@s.whatsapp.net';
 // phone number in international format without + or spaces 
@@ -24,7 +23,6 @@ const defaultConfig = {
         autoWelcome: false,
         autoFarewell: false,
         restrictToAdmins: true,
-        alwaysOnline: false,
         mode: 'private', // 'public' or 'private'
     },
     reactions: {
@@ -124,7 +122,11 @@ const defaultConfig = {
             // 🔧 Admin
             ban: '🚫',
             unban: '✅',
+            addsudo: '✅',
+            aadmin: '✅',
             antilink: '🛑',
+            delsudo: '🛑',
+            radmin: '🛑',
 
             // 👑 Owner
             mode: '⚙️',
@@ -185,6 +187,10 @@ class Config {
 
     isAdmin(number) {
         return this.config.admins.includes(number);
+    }
+
+    isOwner(number) {
+        return this.config.ownerNumber.includes(number);
     }
 
     // Command cooldowns
