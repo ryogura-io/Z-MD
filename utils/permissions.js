@@ -48,6 +48,10 @@ class Permissions {
     async isBotAdmin(userId) {
         return config.isAdmin(userId);
     }
+
+    async isBotOwner(userId) {
+        return config.isOwner(userId);
+    }
     
     async isGroupOwner(userId, groupId, sock) {
         try {
