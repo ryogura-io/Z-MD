@@ -31,7 +31,6 @@ async function startBot() {
             generateHighQualityLinkPreview: true,
             markOnlineOnConnect: false,
             syncFullHistory: false,
-            shouldSyncHistoryMessage: false,
             getMessage: async () => undefined, 
         });
 
