@@ -5,7 +5,6 @@ const mediaCommands = require('./media');
 const utilityCommands = require('./utility');
 const gameCommands = require('./games');
 const downloaderCommands = require('./downloaders');
-const ownerCommands = require('./owner');
 
 // Combine all commands
 const rawCommands = {
@@ -16,7 +15,6 @@ const rawCommands = {
     ...utilityCommands,
     ...gameCommands,
     ...downloaderCommands,
-    ...ownerCommands
 };
 
 const commands = {};
