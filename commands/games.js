@@ -8,7 +8,7 @@ const gameCommands = {
         usage: 'hangman',
         adminOnly: false,
         execute: async (context) => {
-            const { chatId, bot } = context;
+            const { chatId, bot, sock } = context;
 
             async function getRandomWord() {
                 try {
@@ -53,7 +53,7 @@ const gameCommands = {
         usage: 'trivia',
         adminOnly: false,
         execute: async (context) => {
-            const { chatId, bot } = context;
+            const { chatId, bot, sock } = context;
 
             try {
                 // ✅ Fetch 1 trivia question
@@ -94,22 +94,84 @@ const gameCommands = {
 
     tictactoe: {
         description: 'Play TicTacToe with another user',
-        usage: 'ttt [roomName]',
-        alias: ['ttt'],
+        usage: 'tictactoe',
+        aliases: ['ttt'],
+        adminOnly: false,
         execute: async (context) => {
-            const { bot, chatId, sender, args } = context;
-            const text = args.join(' ').trim();
+            const { chatId, bot, sender, message } = context;
+            const TicTacToe = require('../utils/tictactoe');
 
-            await bot.tictactoeCommand(bot.sock, chatId, sender, text);
+            // Check if game already exists
+            if (gameStates.has(chatId) && gameStates.get(chatId).gameType === 'tictactoe') {
+                await bot.sendMessage(chatId, '❌ A TicTacToe game is already running here! Use !a <move> to play.');
+                return;
+            }
+
+            // Ensure a second player (must mention or reply)
+            let opponent;
+            if (message?.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 0) {
+                opponent = message.message.extendedTextMessage.contextInfo.mentionedJid[0];
+            } else if (message?.message?.extendedTextMessage?.contextInfo?.participant) {
+                opponent = message.message.extendedTextMessage.contextInfo.participant;
+            }
+
+            if (!opponent) {
+                await bot.sendMessage(chatId, '❌ Please mention or reply to someone to challenge them.');
+                return;
+            }
+
+            if (opponent === sender) {
+                await bot.sendMessage(chatId, '❌ You cannot play against yourself.');
+                return;
+            }
+
+            // Create new game
+            const game = new TicTacToe(sender, opponent);
+            const state = {
+                game,
+                gameType: 'tictactoe'
+            };
+            gameStates.set(chatId, state);
+
+            const board = game.render().map(v => ({
+                'X': '❎',
+                'O': '⭕',
+                '1': '1️⃣',
+                '2': '2️⃣',
+                '3': '3️⃣',
+                '4': '4️⃣',
+                '5': '5️⃣',
+                '6': '6️⃣',
+                '7': '7️⃣',
+                '8': '8️⃣',
+                '9': '9️⃣',
+            }[v]));
+
+            const msg = `
+🎮 *TicTacToe Started!*
+Player ❎: @${sender.split('@')[0]}
+Player ⭕: @${opponent.split('@')[0]}
+
+${board.slice(0, 3).join('')}
+${board.slice(3, 6).join('')}
+${board.slice(6).join('')}
+
+Turn: @${game.currentTurn.split('@')[0]} (❎)
+
+Use !a <1-9> to make a move, or type !a surrender to give up.
+`;
+
+            await bot.sendMessage(chatId, msg, { mentions: [sender, opponent] });
         }
     },
+
 
     truth: {
         description: 'Get a truth question',
         usage: 'truth',
         adminOnly: false,
         execute: async (context) => {
-            const { chatId, bot } = context;
+            const { chatId, bot, sock } = context;
 
             try {
                 const response = await axios.get("https://api.truthordarebot.xyz/v1/truth");
@@ -132,7 +194,7 @@ const gameCommands = {
         usage: 'dare',
         adminOnly: false,
         execute: async (context) => {
-            const { chatId, bot } = context;
+            const { chatId, bot, sock } = context;
 
             try {
                 const response = await axios.get("https://api.truthordarebot.xyz/v1/dare");
@@ -155,7 +217,7 @@ const gameCommands = {
         usage: 'wordladder',
         adminOnly: false,
         execute: async (context) => {
-            const { chatId, bot } = context;
+            const { chatId, bot, sock } = context;
             const start = 'cat';
             const end = 'dog';
             const text = `🔤 Change ${start} to ${end} one letter at a time (e.g., cat -> cot -> cog -> dog). Reply with steps.`;
@@ -169,18 +231,18 @@ const gameCommands = {
         usage: 'word',
         adminOnly: false,
         execute: async (context) => {
-            const { chatId, bot } = context;
-            
+            const { chatId, bot, sock } = context;
+
             const startWords = ['technology', 'ocean', 'music', 'adventure', 'friendship', 'nature', 'creativity'];
             const word = startWords[Math.floor(Math.random() * startWords.length)];
-            
+
             const gameState = {
                 currentWord: word,
                 gameType: 'word'
             };
-            
+
             gameStates.set(chatId, gameState);
-            
+
             const gameText = `📝 *Word Association Game*\n\nCurrent word: *${word}*\n\nUse !a <word> to continue the chain!`;
             await bot.sendMessage(chatId, gameText);
         }
@@ -191,21 +253,21 @@ const gameCommands = {
         usage: 'a <answer>',
         adminOnly: false,
         execute: async (context) => {
-            const { args, chatId, bot } = context;
-            
+            const { args, chatId, bot, sock } = context;
+
             if (args.length === 0) {
                 await bot.sendMessage(chatId, '❌ Please provide an answer.\nUsage: !a <your answer>');
                 return;
             }
-            
+
             const gameState = gameStates.get(chatId);
             if (!gameState) {
                 await bot.sendMessage(chatId, '❌ No active game. Start a game first!');
                 return;
             }
-            
+
             const answer = args.join(' ').toLowerCase();
-            
+
             switch (gameState.gameType) {
                 case 'hangman':
                     await handleHangmanGuess(gameState, answer, chatId, bot);
@@ -215,6 +277,9 @@ const gameCommands = {
                     break;
                 case 'word':
                     await handleWordAssociation(gameState, answer, chatId, bot);
+                    break;
+                case 'tictactoe':
+                    await handleTicTacToeMove(gameState, answer, chatId, bot, context.sender);
                     break;
                 default:
                     await bot.sendMessage(chatId, '❌ Unknown game type.');
@@ -237,9 +302,9 @@ async function handleHangmanGuess(gameState, guess, chatId, bot) {
         await bot.sendMessage(chatId, '❌ Please guess only one letter at a time.');
         return;
     }
-    
+
     const letter = guess[0];
-    
+
     if (gameState.word.includes(letter)) {
         // Correct guess
         for (let i = 0; i < gameState.word.length; i++) {
@@ -247,26 +312,26 @@ async function handleHangmanGuess(gameState, guess, chatId, bot) {
                 gameState.guessed[i] = letter;
             }
         }
-        
+
         if (!gameState.guessed.includes('_')) {
             gameStates.delete(chatId);
             await bot.sendMessage(chatId, `🎉 *You won!*\n\nThe word was: *${gameState.word}*`);
             return;
         }
-        
+
         const gameText = `✅ Correct!\n\nWord: ${gameState.guessed.join(' ')}\n` +
             `Wrong guesses: ${gameState.wrongGuesses.length}/${gameState.maxWrong}`;
         await bot.sendMessage(chatId, gameText);
     } else {
         // Wrong guess
         gameState.wrongGuesses.push(letter);
-        
+
         if (gameState.wrongGuesses.length >= gameState.maxWrong) {
             gameStates.delete(chatId);
             await bot.sendMessage(chatId, `💀 *Game Over!*\n\nThe word was: *${gameState.word}*`);
             return;
         }
-        
+
         const gameText = `❌ Wrong letter!\n\nWord: ${gameState.guessed.join(' ')}\n` +
             `Wrong guesses: ${gameState.wrongGuesses.join(', ')} (${gameState.wrongGuesses.length}/${gameState.maxWrong})`;
         await bot.sendMessage(chatId, gameText);
@@ -298,5 +363,76 @@ async function handleWordAssociation(gameState, newWord, chatId, bot) {
     gameState.currentWord = newWord;
     await bot.sendMessage(chatId, `📝 New word: *${newWord}*\n\nNext player, continue the association!`);
 }
+
+async function handleTicTacToeMove(gameState, input, chatId, bot, sender) {
+    const game = gameState.game;
+    const surrender = /^(surrender|give up)$/i.test(input);
+
+    if (!surrender && !/^[1-9]$/.test(input)) return;
+
+    if (!surrender && sender !== game.currentTurn) {
+        await bot.sendMessage(chatId, '❌ Not your turn!', { mentions: [sender] });
+        return;
+    }
+
+    let moveOk = surrender ? true : game.turn(sender === game.playerO, parseInt(input) - 1);
+
+    if (!moveOk) {
+        await bot.sendMessage(chatId, '❌ Invalid move!');
+        return;
+    }
+
+    let winner = game.winner;
+    let isTie = game.turns >= 9 && !winner;
+
+    if (surrender) {
+        winner = sender === game.playerX ? game.playerO : game.playerX;
+    }
+
+    const board = game.render().map(v => ({
+        'X': '❎',
+        'O': '⭕',
+        '1': '1️⃣',
+        '2': '2️⃣',
+        '3': '3️⃣',
+        '4': '4️⃣',
+        '5': '5️⃣',
+        '6': '6️⃣',
+        '7': '7️⃣',
+        '8': '8️⃣',
+        '9': '9️⃣',
+    }[v]));
+
+    let status;
+    if (winner) {
+        status = `🎉 @${winner.split('@')[0]} wins the game!`;
+    } else if (isTie) {
+        status = `🤝 It's a draw!`;
+    } else {
+        status = `🎲 Turn: @${game.currentTurn.split('@')[0]}`;
+    }
+
+    const msg = `
+🎮 *TicTacToe Game*
+
+${status}
+
+${board.slice(0, 3).join('')}
+${board.slice(3, 6).join('')}
+${board.slice(6).join('')}
+
+Player ❎: @${game.playerX.split('@')[0]}
+Player ⭕: @${game.playerO.split('@')[0]}
+`;
+
+    await bot.sendMessage(chatId, msg, { mentions: [game.playerX, game.playerO] });
+
+    if (winner || isTie) {
+        gameStates.delete(chatId);
+    }
+}
+
+
+
 
 module.exports = gameCommands;
