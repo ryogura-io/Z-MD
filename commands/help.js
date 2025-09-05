@@ -159,7 +159,7 @@ const helpCommand = {
         adminOnly: true,
         execute: async (context) => {
             const { chatId, bot } = context;
-            const adminMenu = `*🔅Admin Commands Menu* \n📊 *Sudo* \n• sudoadd \n• sudodel \n• settings \n• set
+            const adminMenu = `*🔅Admin Commands Menu* \n📊 *Sudo* \n• addsudo \n• delsudo \n• settings \n• set
             \n👑 *Owner* \n• mode \n• setpp`
             
             const fileBuffer = fs.readFileSync("assets/coffee-morning.mp4");
