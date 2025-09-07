@@ -77,7 +77,7 @@ async function startBot() {
                 
                 if (!sock.__welcomeSent) {
                     const firstOwner = config.get("phoneNumber");
-                    const msg = `✅ *Gura-MD Bot Connected!*\n\n` +
+                    const msg = `✅ *Zen-MD Connected!*\n\n` +
                         `🤖 WhatsApp Bot is online\n` +
                         `⏰ Connected at: ${new Date().toLocaleString()}\n` +
                         `📱 Status: Ready\n\n` +
