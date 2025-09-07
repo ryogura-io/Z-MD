@@ -5,7 +5,7 @@ const phoneNumber = '2348153827918' + '@s.whatsapp.net';
 // Default configuration
 const defaultConfig = {
     prefix: '!',
-    ownerName: 'Ryou',
+    ownerName: 'Zen',
     phoneNumber,
     pairingNumber,
     ownerNumber: [
@@ -25,121 +25,12 @@ const defaultConfig = {
         restrictToAdmins: true,
         mode: 'private', // 'public' or 'private'
     },
-    reactions: {
-        commands: {
-            // 🏓 Basic
-            help: '❓',
-            basic: '📜',
-            utility: '📜',
-            download: '📜',
-            games: '📜',
-            media: '📜',
-            group: '📜',
-            h: '❓',
-            menu: '❓',
-            ping: '🏓',
-            profile: '👤',
-            pp: '👤',
+    reactions : { commands: { help:'❓',basic:'📜',utility:'📜',downloads:'📜',games:'📜',media:'📜',group:'📜',h:'❓',menu:'❓',ping:'🏓',profile:'👤',pp:'👤',tts:'🔊',owner:'👑',locked:'👑',joke:'😂',fact:'🧠',quote:'💭',weather:'🌤️',define:'📖',lyrics:'🎵',vv:'👀',
+sticker:'🎯',s:'🎯',toimg:'🖼️',img:'🖼️',image:'🖼️',pic:'🖼️',take:'👊',steal:'👊',tourl:'🔗',url:'🔗',tiny:'✂',movie:'🎬',imdb:'🎬',anime:'🎌',ani:'🎌',hangman:'🪢',trivia:'❓', scramble:'🔤', poke:'🐲', poke:'🐲', tictactoe:'⭕',ttt:'⭕',truth:'🗣️',dare:'🔥',word:'🔤',a:'🅰️',
+play:'▶️',yt:'▶️',video:'▶️',song:'🎶',tomp3:'🎶',instagram:'📸',ig:'📸',tiktok:'🎵',tt:'🎵',spotify:'🎵',spot:'🎵',youtube:'▶️',ytmp3:'🎧',waifu:'💮',wife:'💮',promote:'⬆️',demote:'⬇️',kick:'👢',remove:'👢',add:'➕',setname:'📝',setdesc:'📜',close:'🔒',
+mute:'🔒',open:'🔓',unmute:'🔓',tag:'🏷️',tagall:'📣',admins:'🛡️',resetlink:'♻️',groupinfo:'ℹ️',ginfo:'ℹ️',link:'🔗',ban:'🚫',unban:'✅',addsudo:'✅',aadmin:'✅',antilink:'🛑',delsudo:'🛑',radmin:'🛑',mode:'⚙️',settings:'⚙️',setting:'⚙️',set:'⚙️',
+antidelete:'🗑️',setpp:'🖼️' }, phoneNumbers:{} }
 
-            // 🛠️ Utility
-            tts: '🔊',
-            owner: '👑',
-            locked: '👑',
-            joke: '😂',
-            fact: '🧠',
-            quote: '💭',
-            weather: '🌤️',
-            define: '📖',
-            lyrics: '🎵',
-            vv: '👀',
-
-            // 🎨 Media
-            sticker: '🎯',
-            s: '🎯',
-            toimg: '🖼️',
-            img: '🖼️',
-            image: '🖼️',
-            pic: '🖼️',
-            take: '👊',
-            steal: '👊',
-            tourl: '🔗',
-            url: '🔗',
-            tiny: '✂',
-
-            // 🎬 Enhanced
-            movie: '🎬',
-            imdb: '🎬',
-            anime: '🎌',
-            ani: '🎌',
-
-            // 🎮 Games
-            hangman: '🪢',
-            trivia: '❓',
-            tictactoe: '⭕',
-            ttt: '⭕',
-            truth: '🗣️',
-            dare: '🔥',
-            word: '🔤',
-            a: '🅰️',
-
-            // ⬇️ Downloads
-            play: '▶️',
-            yt: '▶️',
-            video: '▶️',
-            song: '🎶',
-            tomp3: '🎶',
-            instagram: '📸',
-            ig: '📸',
-            tiktok: '🎵',
-            tt: '🎵',
-            spotify: '🎵',
-            spot: '🎵',
-            youtube: '▶️',
-            ytmp3: '🎧',
-            waifu: '💮',
-            wife: '💮',
-
-            // 👥 Group
-            promote: '⬆️',
-            demote: '⬇️',
-            kick: '👢',
-            remove: '👢',
-            add: '➕',
-            setname: '📝',
-            setdesc: '📜',
-            close: '🔒',
-            mute: '🔒',
-            open: '🔓',
-            unmute: '🔓',
-            tag: '🏷️',
-            tagall: '📣',
-            admins: '🛡️',
-            resetlink: '♻️',
-            groupinfo: 'ℹ️',
-            ginfo: 'ℹ️',
-            link: '🔗',
-
-            // 🔧 Admin
-            ban: '🚫',
-            unban: '✅',
-            addsudo: '✅',
-            aadmin: '✅',
-            antilink: '🛑',
-            delsudo: '🛑',
-            radmin: '🛑',
-
-            // 👑 Owner
-            mode: '⚙️',
-            settings: '⚙️',
-            setting: '⚙️',
-            set: '⚙️',
-            antidelete: '🗑️',
-            setpp: '🖼️',
-        },
-        phoneNumbers: {
-            // '270617702056168@lid': '💭',
-        }
-    }
 };
 
 module.exports = defaultConfig
