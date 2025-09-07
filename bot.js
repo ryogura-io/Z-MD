@@ -1,9 +1,6 @@
 const commands = require('./commands');
 const config = require('./config');
 const permissions = require('./utils/permissions');
-const TicTacToe = require('./utils/tictactoe');
-const games = {}; // store ongoing games by room name
-
 
 class Bot {
     constructor(sock, msgQueue) {
@@ -38,12 +35,6 @@ class Bot {
 
             const args = messageText.slice(prefix.length).trim().split(' ');
             const commandName = args.shift().toLowerCase();
-
-            // Handle TicTacToe moves if no prefix
-            if (!messageText.startsWith(config.get('prefix'))) {
-                await this.handleTicTacToeMove(this.sock, message.key.remoteJid, message.key.participant || message.key.remoteJid, messageText.trim());
-                return;
-            }
 
             if (!this.commands[commandName]) return;
 
