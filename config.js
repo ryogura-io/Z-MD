@@ -1,5 +1,5 @@
-const pairingNumber = '2347010285113'
-const phoneNumber = '2347010285113' + '@s.whatsapp.net';
+const pairingNumber = '2348067657315'
+const phoneNumber = '2348067657315' + '@s.whatsapp.net';
 // phone number in international format without + or spaces 
 
 // Default configuration
@@ -10,12 +10,11 @@ const defaultConfig = {
     pairingNumber,
     ownerNumber: [
         phoneNumber,
-        '270617702056168@lid',
+        '222015667630173@lid',
     ], // Owner's WhatsApp number
     admins: [
         phoneNumber,
-        '33381123379402@lid',
-        '270617702056168@lid',
+        '222015667630173@lid',
     ], // Admin numbers
     allowedGroups: [], // If empty, bot works in all groups
     commandCooldown: 2000, // 2 seconds
